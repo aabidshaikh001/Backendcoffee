@@ -74,19 +74,21 @@ const menuItemSchema = new mongoose.Schema(
 // Auto-generate price range before saving
 menuItemSchema.pre("save", function (next) {
   if (this.prices && this.prices.length > 0) {
-    if (this.prices.length === 1) {
-      this.priceRange = this.prices[0].price;
-    } else {
-      const prices = this.prices.map((p) =>
-        parseFloat(p.price.replace("$", ""))
-      );
+    const prices = this.prices
+      .map((p) => parseFloat(p.price.replace(/[₹,]/g, "")))
+      .filter((num) => !isNaN(num));
+
+    if (prices.length === 1) {
+      this.priceRange = `₹${prices[0].toFixed(2)}`;
+    } else if (prices.length > 1) {
       const min = Math.min(...prices);
       const max = Math.max(...prices);
-      this.priceRange = `$${min.toFixed(2)} - $${max.toFixed(2)}`;
+      this.priceRange = `₹${min.toFixed(2)} - ₹${max.toFixed(2)}`;
     }
   }
   next();
 });
+
 
 const MenuItem = mongoose.model("MenuItem", menuItemSchema);
 module.exports = MenuItem;
